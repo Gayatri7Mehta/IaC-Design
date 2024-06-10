@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-#defining jobs
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -19,6 +19,9 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registry: 381492074600.dkr.ecr.ap-south-1.amazonaws.com  # ECR registry URL without repository name
+          aws-region: ap-south-1  # Specify your AWS region here
 
       - name: Build and push Docker image
         id: build-image
@@ -34,10 +37,9 @@ jobs:
       - name: Update ECS service
         id: update-ecs-service
         env:
-          AWS_REGION: ap-south-1
+          AWS_REGION: ap-south-1  # Specify your AWS region here
           ECS_CLUSTER: hello-world-cluster
           ECS_SERVICE: hello-world-service
           IMAGE_URL: ${{ steps.build-image.outputs.image-url }}
         run: |
           aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --force-new-deployment --region $AWS_REGION --task-definition "hello-world-task:1"
-
