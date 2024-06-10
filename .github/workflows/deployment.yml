@@ -1,0 +1,45 @@
+name: Deploy to AWS ECS
+
+on:
+  push:
+    branches:
+      - main  
+#jobs defination
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Log in to Amazon ECR
+      id: ecr-login
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build, tag, and push image to ECR
+      env:
+        ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+        ECR_REPOSITORY: helloworld  
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+    - name: Register task definition in ECS
+      id: task-def
+      uses: aws-actions/amazon-ecs-register-task-definition@v1
+      with:
+        family: hello-world-task  
+        container-name: hello-world  
+        image: ${{ steps.ecr-login.outputs.registry }}/helloworld:${{ github.sha }}
+
+    - name: Deploy ECS service
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      with:
+        service: hello-world-service 
+        cluster: hello-world-cluster  
+        wait-for-service-stability: true
