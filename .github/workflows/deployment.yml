@@ -3,8 +3,8 @@ name: Deploy to AWS ECS
 on:
   push:
     branches:
-      - main  
-#jobs defination
+      - main  # or the branch you want to deploy from
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -23,7 +23,7 @@ jobs:
     - name: Build, tag, and push image to ECR
       env:
         ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
-        ECR_REPOSITORY: helloworld  
+        ECR_REPOSITORY: helloworld
         IMAGE_TAG: ${{ github.sha }}
       run: |
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
@@ -33,13 +33,13 @@ jobs:
       id: task-def
       uses: aws-actions/amazon-ecs-register-task-definition@v1
       with:
-        family: hello-world-task  
-        container-name: hello-world  
-        image: ${{ steps.ecr-login.outputs.registry }}/helloworld:${{ github.sha }}
+        family: hello-world-task:8
+        container-name: hello-world
+        image: ${{ steps.ecr-login.outputs.registry }}/your-ecr-repository-name:${{ github.sha }}
 
     - name: Deploy ECS service
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
-        service: hello-world-service 
-        cluster: hello-world-cluster  
+        service: hello-world-service
+        cluster: hello-world-cluster
         wait-for-service-stability: true
