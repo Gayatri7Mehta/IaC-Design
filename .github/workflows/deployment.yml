@@ -20,8 +20,11 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
         with:
-          registry: 381492074600.dkr.ecr.ap-south-1.amazonaws.com  # ECR registry URL without repository name
-          aws-region: ap-south-1  # Specify your AWS region here
+          registry: 381492074600.dkr.ecr.ap-south-1.amazonaws.com
+          aws-region: ap-south-1
+          mask-password: true
+          registry-type: private
+          skip-logout: false
 
       - name: Build and push Docker image
         id: build-image
@@ -37,7 +40,7 @@ jobs:
       - name: Update ECS service
         id: update-ecs-service
         env:
-          AWS_REGION: ap-south-1  # Specify your AWS region here
+          AWS_REGION: ap-south-1  
           ECS_CLUSTER: hello-world-cluster
           ECS_SERVICE: hello-world-service
           IMAGE_URL: ${{ steps.build-image.outputs.image-url }}
