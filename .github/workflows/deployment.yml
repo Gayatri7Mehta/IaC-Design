@@ -19,11 +19,6 @@ jobs:
     - name: Log in to Amazon ECR
       id: ecr-login
       uses: aws-actions/amazon-ecr-login@v1
-      with:
-        registry: 381492074600.dkr.ecr.ap-south-1.amazonaws.com/helloworld
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ap-south-1
 
     - name: Build, tag, and push image to ECR
       env:
@@ -40,7 +35,7 @@ jobs:
       with:
         family: hello-world-task
         container-name: hello-world
-        image: ${{ steps.ecr-login.outputs.registry }}/your-ecr-repository-name:${{ github.sha }}
+        image: ${{ steps.ecr-login.outputs.registry }}/helloworld:${{ github.sha }}
 
     - name: Deploy ECS service
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1

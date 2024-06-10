@@ -37,7 +37,9 @@ resource "aws_route_table_association" "main" {
 
 # Create a Security Group
 resource "aws_security_group" "sg" {
-  vpc_id = aws_vpc.main.id
+  name        = "hello-world-sg"
+  description = "Allow HTTP inbound traffic"
+  vpc_id      = aws_vpc.main.id
 
   ingress {
     from_port   = 80
@@ -76,48 +78,54 @@ resource "aws_iam_role" "ecs_task_execution" {
 }
 
 # ECS Cluster
-name: Deploy to AWS ECS
+resource "aws_ecs_cluster" "main" {
+  name = "hello-world-cluster"
+}
 
-on:
-  push:
-    branches:
-      - main  
+# ECS Task Definition
+resource "aws_ecs_task_definition" "hello_world" {
+  family                   = "hello-world-task"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
+  cpu                      = "256"
+  memory                   = "512"
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
+  container_definitions = jsonencode([{
+    name      = "hello-world"
+    image     = "${aws_ecr_repository.helloworld.repository_url}:latest"
+    essential = true
+    portMappings = [{
+      containerPort = 80
+      hostPort      = 80
+    }]
+  }])
+}
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+# ECS Service
+resource "aws_ecs_service" "main" {
+  name            = "hello-world-service"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.hello_world.arn
+  desired_count   = 1
+  launch_type     = "FARGATE"
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
+  network_configuration {
+    subnets         = [aws_subnet.subnet.id]
+    security_groups = [aws_security_group.sg.id]
+    assign_public_ip = true
+  }
+}
 
-    - name: Log in to Amazon ECR
-      id: ecr-login
-      uses: aws-actions/amazon-ecr-login@v1
+# ECR Repository
+resource "aws_ecr_repository" "helloworld" {
+  name = "helloworld"
+}
 
-    - name: Build, tag, and push image to ECR
-      env:
-        ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
-        ECR_REPOSITORY: helloworld  
-        IMAGE_TAG: ${{ github.sha }}
-      run: |
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+output "ecs_cluster_name" {
+  value = aws_ecs_cluster.main.name
+}
 
-    - name: Register task definition in ECS
-      id: task-def
-      uses: aws-actions/amazon-ecs-register-task-definition@v1
-      with:
-        family: hello-world-task  
-        container-name: hello-world  
-        image: ${{ steps.ecr-login.outputs.registry }}/helloworld:${{ github.sha }}
-
-    - name: Deploy ECS service
-      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-      with:
-        service: hello-world-service 
-        cluster: hello-world-cluster 
-        wait-for-service-stability: true
+output "ecs_service_name" {
+  value = aws_ecs_service.main.name
+}
