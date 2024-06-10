@@ -20,7 +20,8 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
         with:
-          registry: 381492074600.dkr.ecr.ap-south-1.amazonaws.com  # Assuming this is your ECR registry URL
+          registry: 381492074600.dkr.ecr.ap-south-1.amazonaws.com
+          aws-region: ap-south-1
           mask-password: true
           registry-type: private
           skip-logout: false
@@ -39,7 +40,7 @@ jobs:
       - name: Update ECS service
         id: update-ecs-service
         env:
-          AWS_REGION: ap-south-1  # Assuming this is your region where ECS cluster resides
+          AWS_REGION: ap-south-1
           ECS_CLUSTER: hello-world-cluster
           ECS_SERVICE: hello-world-service
           IMAGE_URL: ${{ steps.build-image.outputs.image-url }}
