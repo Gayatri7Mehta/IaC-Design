@@ -20,7 +20,7 @@ jobs:
       id: ecr-login
       uses: aws-actions/amazon-ecr-login@v1
       with:
-        registry: YOUR_ECR_REGISTRY_URL
+        registry: 381492074600.dkr.ecr.ap-south-1.amazonaws.com/helloworld
 
     - name: Build, tag, and push image to ECR
       env:
@@ -55,7 +55,7 @@ jobs:
               ]
             }
           ],
-          "executionRoleArn": "YOUR_ECS_TASK_EXECUTION_ROLE_ARN",
+          "executionRoleArn": "arn:aws:iam::381492074600:role/ecsTaskExecutionRole",
           "networkMode": "awsvpc",
           "cpu": "256",
           "memory": "512",
